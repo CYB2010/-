@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>运动员检录系统</title>
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="%230D1B2A"/><path d="M6 4v16M6 5h11l-3 4 3 4H6" fill="none" stroke="%23FF7A1A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'>
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<style>
+/* ===================== 基础与主题 ===================== */
+:root{
+  --bg:#0D1B2A;
+  --panel:#12263B;
+  --panel-2:#0F1F33;
+  --line:rgba(255,255,255,.09);
+  --text:#F4F7FB;
+  --muted:#8FA4BC;
+  --accent:#FF7A1A;
+  --accent-2:#FFB020;
+  --ok:#2EC4B6;
+  --danger:#E4572E;
+  --radius:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:auto}
+body{
+  font-family:"Noto Sans SC",-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input{font-family:inherit;color:inherit}
+::selection{background:rgba(255,122,26,.35)}
+
+/* ===================== 顶部栏 ===================== */
+.topbar{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 22px;
+  border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(255,122,26,.10),rgba(255,122,26,0) 70%);
+}
+.topbar .logo{flex-shrink:0;width:38px;height:38px;border-radius:10px;background:var(--panel);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--accent)}
+.topbar h1{font-size:19px;font-weight:900;letter-spacing:.5px}
+.topbar .sub{font-size:12px;color:var(--muted);margin-top:1px}
+.topbar .spacer{flex:1}
+.topbar .clock{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* ===================== 主体布局 ===================== */
+.main{
+  display:grid;
+  grid-template-columns:360px minmax(0,1fr);
+  gap:18px;
+  padding:18px 22px;
+  max-width:1400px;
+  margin:0 auto;
+}
+
+/* ===================== 操作面板 ===================== */
+.panel{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:18px;
+  align-self:start;
+}
+.panel-head{display:flex;align-items:center;gap:8px;margin-bottom:14px;color:var(--accent-2);font-weight:700;font-size:14px;letter-spacing:1px}
+.panel-head svg{width:16px;height:16px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:6px;font-weight:500}
+.field .req{color:var(--accent)}
+.input-wrap{position:relative}
+.input-wrap input{
+  width:100%;padding:11px 13px;font-size:15px;border-radius:10px;
+  background:var(--panel-2);border:1px solid var(--line);color:var(--text);
+  transition:border-color .18s;
+}
+.input-wrap input::placeholder{color:#5F7590}
+.input-wrap input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,122,26,.15)}
+.input-wrap .char-count{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:11px;color:#5F7590;pointer-events:none}
+
+/* 语音设置 */
+.voice-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.voice-row .v-label{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);font-weight:500}
+.voice-row .v-label svg{width:15px;height:15px;color:var(--accent)}
+.switch{position:relative;width:44px;height:24px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.switch .track{position:absolute;inset:0;border-radius:99px;background:#2A3D55;transition:background .2s}
+.switch .track::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#F4F7FB;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+.switch input:checked + .track{background:var(--accent)}
+.switch input:checked + .track::after{transform:translateX(20px)}
+
+.rate-row{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.rate-row .r-label{font-size:12.5px;color:var(--muted);font-weight:500;flex-shrink:0}
+.voice-pick-row{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.voice-pick-row .r-label{font-size:12.5px;color:var(--muted);font-weight:500;flex-shrink:0}
+.voice-pick-body{display:flex;flex:1;gap:6px;min-width:0}
+.voice-select{
+  flex:1;min-width:0;appearance:none;padding:9px 12px;font-size:13px;border-radius:10px;
+  background:var(--panel-2);border:1px solid var(--line);color:var(--text);font-family:inherit;
+  background-image:url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="6" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" fill="none" stroke="%238FA4BC" stroke-width="1.6" stroke-linecap="round"/></svg>');
+  background-repeat:no-repeat;background-position:right 12px center;
+}
+.voice-select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,122,26,.15)}
+.voice-select option{background:#12263B;color:var(--text)}
+.voice-test{flex-shrink:0;width:38px;height:38px;border:1px solid var(--line);background:var(--panel-2)}
+.voice-test:hover{background:rgba(46,196,182,.15);color:var(--ok);border-color:rgba(46,196,182,.4)}
+.rate-seg{display:flex;flex:1;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+.rate-seg button{flex:1;padding:6px 0;font-size:12.5px;border-radius:8px;color:var(--muted);transition:all .15s}
+.rate-seg button.active{background:var(--accent);color:#fff;font-weight:700}
+
+.btn-primary{
+  width:100%;padding:13px;font-size:16px;font-weight:900;letter-spacing:2px;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  color:#fff;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  transition:transform .12s,box-shadow .12s,filter .12s;
+  box-shadow:0 4px 14px rgba(255,122,26,.25);
+}
+.btn-primary:hover{filter:brightness(1.06);transform:translateY(-1px)}
+.btn-primary:active{transform:translateY(0)}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-primary svg{width:18px;height:18px}
+.btn-ghost{
+  width:100%;margin-top:10px;padding:10px;font-size:13px;color:var(--muted);
+  border:1px dashed rgba(255,255,255,.18);border-radius:10px;transition:all .15s;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.btn-ghost:hover{color:var(--danger);border-color:rgba(228,87,46,.5)}
+.btn-ghost svg{width:14px;height:14px}
+.hint{font-size:11.5px;color:#5F7590;margin-top:12px;line-height:1.7}
+
+/* ===================== 大屏显示区 ===================== */
+.stage{
+  background:
+    radial-gradient(1200px 500px at 50% -10%,rgba(255,122,26,.14),transparent 60%),
+    linear-gradient(180deg,var(--panel),var(--panel-2));
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  min-height:430px;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  position:relative;
+}
+.stage-top{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--line)}
+.stage-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;letter-spacing:2px;color:var(--muted)}
+.stage-title .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.speak-state{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);min-height:20px}
+.speak-state .bars{display:flex;align-items:flex-end;gap:3px;height:16px}
+.speak-state .bars i{width:3px;background:var(--accent);border-radius:2px;height:5px;opacity:0;transition:opacity .2s}
+.speak-state.on .bars i{opacity:1;animation:bar 0.9s ease-in-out infinite}
+.speak-state.on .bars i:nth-child(2){animation-delay:.15s}
+.speak-state.on .bars i:nth-child(3){animation-delay:.3s}
+@keyframes bar{0%,100%{height:5px}50%{height:16px}}
+
+.stage-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:24px 28px;text-align:center}
+.stage-tag{font-size:13px;letter-spacing:4px;color:var(--muted);margin-bottom:6px}
+.stage-name{
+  font-size:clamp(40px,7vw,84px);font-weight:900;line-height:1.15;
+  color:var(--text);word-break:break-all;max-width:100%;
+}
+.stage-name.speaking{color:var(--accent-2);text-shadow:0 0 30px rgba(255,176,32,.35)}
+.stage-event{
+  font-size:clamp(18px,2.6vw,30px);font-weight:700;color:var(--accent);
+  margin-top:6px;
+}
+.stage-msg{font-size:14px;color:var(--muted);margin-top:14px;line-height:1.7}
+.stage-empty{color:#5F7590;font-size:15px;letter-spacing:1px}
+.stage-footer{padding:10px 20px;border-top:1px solid var(--line);font-size:11.5px;color:#5F7590;text-align:center}
+
+/* ===================== 检录记录 ===================== */
+.records{
+  grid-column:1 / -1;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:18px;
+}
+.records-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.records-head .t{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;color:var(--accent-2);letter-spacing:1px}
+.records-head .t svg{width:16px;height:16px}
+.records-head .count{font-size:12.5px;color:var(--muted)}
+.records-head .count b{color:var(--accent);font-weight:900}
+.rec-list{display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto;padding-right:4px}
+.rec-list::-webkit-scrollbar{width:6px}
+.rec-list::-webkit-scrollbar-thumb{background:#2A3D55;border-radius:3px}
+.rec-row{
+  display:grid;grid-template-columns:44px 92px 1fr 1.4fr 96px 96px;
+  align-items:center;gap:10px;
+  background:var(--panel-2);border:1px solid var(--line);border-radius:10px;
+  padding:9px 12px;font-size:13.5px;transition:border-color .15s;
+}
+.rec-row:hover{border-color:rgba(255,122,26,.4)}
+.rec-row.new{animation:flashRow 1.6s ease-out}
+@keyframes flashRow{0%{background:rgba(255,122,26,.22)}100%{background:var(--panel-2)}}
+.rec-no{color:var(--muted);font-variant-numeric:tabular-nums;font-weight:700}
+.rec-time{color:var(--muted);font-variant-numeric:tabular-nums;font-size:12.5px}
+.rec-name{font-weight:700}
+.rec-event{color:var(--accent);font-weight:500}
+.rec-status{font-size:12px;color:var(--ok);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.rec-status svg{width:12px;height:12px}
+.rec-actions{display:flex;gap:6px;justify-content:flex-end}
+.icon-btn{
+  width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  background:transparent;color:var(--muted);transition:all .15s;
+}
+.icon-btn svg{width:15px;height:15px}
+.icon-btn.replay:hover{background:rgba(46,196,182,.15);color:var(--ok)}
+.icon-btn.del:hover{background:rgba(228,87,46,.15);color:var(--danger)}
+.rec-empty{text-align:center;color:#5F7590;padding:26px 0;font-size:14px;letter-spacing:1px}
+
+/* ===================== Toast ===================== */
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(16px);
+  background:#1E3350;color:var(--text);font-size:13.5px;
+  padding:10px 18px;border-radius:10px;border:1px solid var(--line);
+  opacity:0;pointer-events:none;transition:all .25s;z-index:99;
+  box-shadow:0 6px 20px rgba(0,0,0,.4);max-width:86vw;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.err{border-color:rgba(228,87,46,.6);color:#FFB4A0}
+
+/* ===================== 响应式 ===================== */
+@media (max-width:880px){
+  .main{grid-template-columns:1fr;padding:14px}
+  .topbar{padding:12px 14px}
+  .topbar h1{font-size:16px}
+  .topbar .sub{font-size:13px}
+  .input-wrap input{font-size:16px}
+  .rate-seg button{min-height:44px;font-size:14px}
+  .btn-ghost{min-height:44px;padding:12px}
+  .icon-btn{min-width:44px;min-height:44px}
+  .rec-row{grid-template-columns:36px 1fr auto;grid-template-rows:auto auto;gap:4px 10px}
+  .rec-no{grid-column:1;grid-row:1 / span 2;align-self:center}
+  .rec-time{grid-column:2;grid-row:1;font-size:12px}
+  .rec-name{grid-column:2;grid-row:2;font-size:14px}
+  .rec-event{grid-column:2;grid-row:3;font-size:12.5px}
+  .rec-status{grid-column:3;grid-row:1;justify-self:end}
+  .rec-actions{grid-column:3;grid-row:2 / span 2;justify-self:end;flex-direction:column}
+  .stage{min-height:340px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+}
+
+/* ===================== 欢迎页 ===================== */
+.welcome{
+  position:fixed;inset:0;z-index:1000;
+  display:flex;align-items:center;justify-content:center;
+  background:
+    radial-gradient(900px 420px at 50% 12%,rgba(255,122,26,.22),transparent 65%),
+    linear-gradient(180deg,#101F33,#0B1626);
+  transition:opacity .45s ease;
+}
+.welcome.hide{opacity:0;pointer-events:none}
+.welcome-card{text-align:center;padding:30px 26px;max-width:92vw}
+.welcome-logo{
+  width:64px;height:64px;margin:0 auto 22px;border-radius:16px;
+  background:rgba(255,122,26,.14);border:1px solid rgba(255,122,26,.4);
+  display:flex;align-items:center;justify-content:center;color:var(--accent);
+  animation:breathe 2.6s ease-in-out infinite;
+}
+@keyframes breathe{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.85}}
+.welcome-title{font-size:clamp(20px,3vw,26px);letter-spacing:8px;color:var(--muted);font-weight:500;margin-bottom:10px}
+.welcome-name{font-size:clamp(26px,5vw,44px);font-weight:900;line-height:1.35;color:var(--text);text-shadow:0 0 34px rgba(255,176,32,.25)}
+.welcome-name .hl{color:var(--accent-2)}
+.welcome-sub{font-size:13.5px;color:var(--muted);margin-top:16px;letter-spacing:1px}
+.welcome-btn{
+  margin-top:34px;padding:14px 58px;font-size:16px;font-weight:900;letter-spacing:3px;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;border-radius:12px;
+  box-shadow:0 6px 22px rgba(255,122,26,.3);transition:transform .12s,filter .12s;
+}
+.welcome-btn:hover{filter:brightness(1.07);transform:translateY(-2px)}
+.welcome-btn:active{transform:translateY(0)}
+.welcome-tip{font-size:11.5px;color:#5F7590;margin-top:18px}
+</style>
+</head>
+<body>
+
+<!-- ===================== 欢迎页 ===================== -->
+<div class="welcome" id="welcome">
+  <div class="welcome-card">
+    <div class="welcome-logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16M6 5h11l-3 4 3 4H6"/></svg>
+    </div>
+    <div class="welcome-title">欢 迎 使 用</div>
+    <div class="welcome-name"><span class="hl">崔雨博</span>自制运动员检录系统</div>
+    <div class="welcome-sub">录入运动员信息 · 语音播报 · 大字显示</div>
+    <button class="welcome-btn" id="welcomeBtn">进入系统</button>
+    <div class="welcome-tip">点击进入后即可开始录入检录</div>
+  </div>
+</div>
+
+<!-- ===================== 顶部栏 ===================== -->
+<header class="topbar">
+  <div class="logo" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16M6 5h11l-3 4 3 4H6"/></svg>
+  </div>
+  <div>
+    <h1>运动员检录系统</h1>
+    <div class="sub">录入运动员信息，自动语音播报并大字显示</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="clock" id="clock">--:--:--</div>
+</header>
+
+<main class="main">
+
+  <!-- ===================== 左：操作面板 ===================== -->
+  <section class="panel" aria-label="检录操作">
+    <div class="panel-head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+      检录操作
+    </div>
+
+    <div class="field">
+      <label for="nameInput">运动员姓名 <span class="req">*</span></label>
+      <div class="input-wrap">
+        <input id="nameInput" type="text" maxlength="100" placeholder="请输入运动员姓名" autocomplete="off">
+        <span class="char-count" id="nameCount">0/100</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="eventInput">参赛项目 <span class="req">*</span></label>
+      <div class="input-wrap">
+        <input id="eventInput" type="text" maxlength="30" list="eventList" placeholder="如：男子100米 / 跳远" autocomplete="off">
+        <datalist id="eventList">
+          <option value="男子100米"></option><option value="女子100米"></option>
+          <option value="男子200米"></option><option value="女子200米"></option>
+          <option value="男子400米"></option><option value="女子400米"></option>
+          <option value="男子800米"></option><option value="女子800米"></option>
+          <option value="男子1500米"></option><option value="女子1500米"></option>
+          <option value="4×100米接力"></option><option value="4×400米接力"></option>
+          <option value="跳高"></option><option value="跳远"></option><option value="立定跳远"></option>
+          <option value="铅球"></option><option value="实心球"></option><option value="跳绳"></option>
+        </datalist>
+      </div>
+    </div>
+
+    <div class="voice-row">
+      <div class="v-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>
+        语音播报
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="voiceToggle" checked>
+        <span class="track"></span>
+      </label>
+    </div>
+
+    <div class="rate-row">
+      <span class="r-label">播报语速</span>
+      <div class="rate-seg" id="rateSeg">
+        <button type="button" data-rate="0.8">慢</button>
+        <button type="button" data-rate="1" class="active">标准</button>
+        <button type="button" data-rate="1.2">快</button>
+      </div>
+    </div>
+
+    <div class="voice-pick" id="voicePickWrap" hidden>
+      <div class="voice-pick-row">
+        <span class="r-label">播报音色</span>
+        <div class="voice-pick-body">
+          <select id="voicePick" class="voice-select" aria-label="选择播报音色"></select>
+          <button type="button" class="icon-btn replay voice-test" id="voiceTestBtn" title="试听当前音色">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="announceBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>
+      开始检录并播报
+    </button>
+    <button class="btn-ghost" id="clearBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2m-9 0 1 13h10l1-13"/></svg>
+      清空全部记录
+    </button>
+    <p class="hint">填写姓名和项目后点击「开始检录」，即可在右侧大屏显示并语音播报。支持回车快速提交。</p>
+  </section>
+
+  <!-- ===================== 右：大屏显示区 ===================== -->
+  <section class="stage" aria-label="检录显示大屏">
+    <div class="stage-top">
+      <div class="stage-title"><span class="dot"></span>检录显示屏 · 实时播报</div>
+      <div class="speak-state" id="speakState">
+        <span class="bars"><i></i><i></i><i></i></span>
+        <span id="speakText">待机</span>
+      </div>
+    </div>
+    <div class="stage-body" id="stageBody">
+      <div class="stage-tag">当前检录</div>
+      <div class="stage-name" id="stageName">—</div>
+      <div class="stage-event" id="stageEvent">—</div>
+      <div class="stage-msg" id="stageMsg">录入运动员后，姓名与项目将在此大字显示并语音播报</div>
+    </div>
+    <div class="stage-footer">检录系统 · 语音播报已就绪</div>
+  </section>
+
+  <!-- ===================== 检录记录 ===================== -->
+  <section class="records" aria-label="检录记录">
+    <div class="records-head">
+      <div class="t">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
+        检录记录
+      </div>
+      <div class="count">共 <b id="recCount">0</b> 条</div>
+    </div>
+    <div class="rec-list" id="recList">
+      <div class="rec-empty">暂无检录记录，录入第一位运动员吧</div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" role="status"></div>
+
+<script>
+/* ===================== 状态与 DOM ===================== */
+(function(){
+"use strict";
+
+var $ = function(id){ return document.getElementById(id); };
+var nameInput = $("nameInput"),
+    eventInput = $("eventInput"),
+    nameCount = $("nameCount"),
+    announceBtn = $("announceBtn"),
+    clearBtn = $("clearBtn"),
+    voiceToggle = $("voiceToggle"),
+    rateSeg = $("rateSeg"),
+    stageName = $("stageName"),
+    stageEvent = $("stageEvent"),
+    stageMsg = $("stageMsg"),
+    speakState = $("speakState"),
+    speakText = $("speakText"),
+    recList = $("recList"),
+    recCount = $("recCount"),
+    toast = $("toast");
+
+var state = {
+  rate: 1,
+  speaking: false,
+  records: []
+};
+
+/* ===================== 数据持久化 ===================== */
+try {
+  var saved = JSON.parse(localStorage.getItem("athlete-checkin-records") || "[]");
+  if (Array.isArray(saved)) state.records = saved;
+} catch(e) {}
+
+function persist(){
+  try { localStorage.setItem("athlete-checkin-records", JSON.stringify(state.records)); } catch(e) {}
+}
+
+/* ===================== Toast ===================== */
+var toastTimer = null;
+function showToast(msg, isErr){
+  toast.textContent = msg;
+  toast.classList.toggle("err", !!isErr);
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ toast.classList.remove("show"); }, 2200);
+}
+
+/* ===================== 时钟 ===================== */
+function tickClock(){
+  var d = new Date();
+  var pad = function(n){ return (n < 10 ? "0" : "") + n; };
+  $("clock").textContent = pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
+}
+tickClock();
+setInterval(tickClock, 1000);
+
+/* ===================== 输入字数统计 ===================== */
+nameInput.addEventListener("input", function(){
+  nameCount.textContent = nameInput.value.length + "/100";
+});
+
+/* ===================== 语音引擎 ===================== */
+var voiceList = [];
+var voicePick = $("voicePick"),
+    voicePickWrap = $("voicePickWrap"),
+    voiceTestBtn = $("voiceTestBtn");
+
+function loadVoices(){
+  var all = window.speechSynthesis ? speechSynthesis.getVoices() : [];
+  voiceList = all.filter(function(v){ return /^zh/i.test(v.lang); });
+  if (voiceList.length > 1) fillVoicePick();
+}
+if ("speechSynthesis" in window){
+  loadVoices();
+  speechSynthesis.onvoiceschanged = loadVoices;
+}
+
+// 给语音打分：神经语音 > 系统默认，名字越"自然"分越高
+var NEURAL_HINTS = [
+  "xiaoxiao","xiaobei","xiaoyi","xiaohan","xiaomeng","xiaomo","xiaoshuang",
+  "xiaoxuan","xiaoyou","xiaoni","xiaoxue","yunjian","yunxi","yunxia","yunyang",
+  "yunze","yunhao","huihui","yaoyao","kangkang","tingting","lili","susan",
+  "melody","tina","aria","jenny","guy","natural","online","zh-cn-"
+];
+function voiceScore(v){
+  var n = (v.name || "").toLowerCase();
+  var l = (v.lang || "").toLowerCase();
+  var score = 0;
+  if (l === "zh-cn") score += 2;
+  for (var i = 0; i < NEURAL_HINTS.length; i++){
+    if (n.indexOf(NEURAL_HINTS[i]) > -1){ score += 5; break; }
+  }
+  // 柔和女声音色（晓/萱/瑶/慧/婷婷/丽丽）更适合温馨场景
+  var soft = ["xiaoxiao","xiaoyi","xiaohan","xiaomeng","xiaomo","yaoyao","huihui","tingting","lili","susan","melody","tina","aria"];
+  for (var j = 0; j < soft.length; j++){
+    if (n.indexOf(soft[j]) > -1){ score += 1; break; }
+  }
+  if (/^zh[-_]cn$/i.test(v.lang)) score += 1;
+  return score;
+}
+
+function pickVoice(){
+  var saved = "";
+  try { saved = localStorage.getItem("athlete-checkin-voice") || ""; } catch(e){}
+  if (saved){
+    for (var i = 0; i < voiceList.length; i++){
+      if (voiceList[i].name === saved) return voiceList[i];
+    }
+  }
+  var best = voiceList[0] || null;
+  for (var j = 1; j < voiceList.length; j++){
+    if (voiceScore(voiceList[j]) > voiceScore(best)) best = voiceList[j];
+  }
+  return best;
+}
+
+function fillVoicePick(){
+  voicePick.innerHTML = "";
+  var saved = "";
+  try { saved = localStorage.getItem("athlete-checkin-voice") || ""; } catch(e){}
+  voiceList.slice().sort(function(a,b){ return voiceScore(b) - voiceScore(a); }).forEach(function(v){
+    var opt = document.createElement("option");
+    opt.value = v.name;
+    opt.textContent = v.name + (v.localService ? "" : "（在线）");
+    opt.selected = (v.name === saved);
+    voicePick.appendChild(opt);
+  });
+  if (saved && !voiceList.some(function(v){ return v.name === saved; })){
+    var cur = pickVoice();
+    voicePick.value = cur ? cur.name : "";
+  }
+  voicePickWrap.hidden = false;
+}
+
+voicePick.addEventListener("change", function(){
+  var v = voicePick.value;
+  try { localStorage.setItem("athlete-checkin-voice", v || ""); } catch(e){}
+  if (!voiceToggle.checked){ showToast("已记住音色「" + v + "」，开启语音后生效"); return; }
+  var cur = null;
+  voiceList.forEach(function(item){ if (item.name === v) cur = item; });
+  if (cur) previewVoice(cur);
+});
+
+voiceTestBtn.addEventListener("click", function(){
+  if (!("speechSynthesis" in window)){ showToast("当前浏览器不支持语音播报", true); return; }
+  var cur = pickVoice();
+  if (!cur){ showToast("未找到可用的中文语音", true); return; }
+  previewVoice(cur);
+});
+
+function previewVoice(v){
+  if (speechSynthesis.speaking) speechSynthesis.cancel();
+  var u = new SpeechSynthesisUtterance("你好，我是检录系统的播报员，欢迎参加本次运动会。");
+  u.lang = v.lang || "zh-CN";
+  u.voice = v;
+  u.rate = state.rate;
+  u.pitch = 1;
+  u.volume = 1;
+  speechSynthesis.speak(u);
+}
+
+function buildSpeech(text){
+  var u = new SpeechSynthesisUtterance(text);
+  var v = pickVoice();
+  u.lang = v ? (v.lang || "zh-CN") : "zh-CN";
+  if (v) u.voice = v;
+  u.rate = state.rate;
+  u.pitch = 1;
+  u.volume = 1;
+  return u;
+}
+
+function announceText(name, event){
+  return "请" + name + "运动员注意，" + event + "现在开始检录，请到检录处报到。";
+}
+
+function setSpeakUI(on, label){
+  speakState.classList.toggle("on", on);
+  speakText.textContent = label || (on ? "播报中" : "待机");
+  stageName.classList.toggle("speaking", on);
+  state.speaking = on;
+}
+
+function speak(name, event, cb){
+  if (!("speechSynthesis" in window)){
+    showToast("当前浏览器不支持语音播报，已改为仅文字显示", true);
+    setSpeakUI(false, "不支持");
+    if (cb) cb(false);
+    return false;
+  }
+  if (!voiceToggle.checked){
+    setSpeakUI(false, "语音已关闭");
+    if (cb) cb(false);
+    return false;
+  }
+  // 取消正在进行的播报，保证连贯
+  if (speechSynthesis.speaking) speechSynthesis.cancel();
+  var u = buildSpeech(announceText(name, event));
+  u.onstart = function(){ setSpeakUI(true, "播报中"); };
+  u.onend = function(){ setSpeakUI(false, "待机"); if (cb) cb(true); };
+  u.onerror = function(e){
+    if (e.error === "interrupted" || e.error === "canceled") return;
+    setSpeakUI(false, "播报异常");
+    if (cb) cb(false);
+  };
+  speechSynthesis.speak(u);
+  return true;
+}
+
+/* ===================== 语速切换 ===================== */
+rateSeg.addEventListener("click", function(e){
+  var btn = e.target.closest("button[data-rate]");
+  if (!btn) return;
+  Array.prototype.forEach.call(rateSeg.children, function(b){ b.classList.remove("active"); });
+  btn.classList.add("active");
+  state.rate = parseFloat(btn.getAttribute("data-rate"));
+});
+
+/* ===================== 大屏显示 ===================== */
+// phase: "idle" | "speaking" | "done" | "muted"(语音关闭仅文字)
+function renderStage(name, event, phase){
+  stageName.textContent = name || "—";
+  stageEvent.textContent = event || "—";
+  var msg = "录入运动员后，姓名与项目将在此大字显示并语音播报";
+  if (name && event){
+    if (phase === "speaking") msg = "正在语音播报，请运动员注意听候";
+    else if (phase === "done") msg = "语音播报已完成，请运动员尽快前往检录处";
+    else if (phase === "muted") msg = "已登记检录信息（语音未开启，仅文字显示）";
+  }
+  stageMsg.textContent = msg;
+  stageName.classList.remove("speaking");
+}
+
+/* ===================== 记录管理 ===================== */
+function pad2(n){ return (n < 10 ? "0" : "") + n; }
+function nowStr(){
+  var d = new Date();
+  return pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + ":" + pad2(d.getSeconds());
+}
+
+function renderRecords(){
+  recCount.textContent = state.records.length;
+  recList.innerHTML = "";
+  if (!state.records.length){
+    var empty = document.createElement("div");
+    empty.className = "rec-empty";
+    empty.textContent = "暂无检录记录，录入第一位运动员吧";
+    recList.appendChild(empty);
+    return;
+  }
+  var icons = {
+    replay: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>',
+    del: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    ok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 7"/></svg>'
+  };
+  state.records.forEach(function(r, idx){
+    var row = document.createElement("div");
+    row.className = "rec-row" + (r.flash ? " new" : "");
+    row.setAttribute("data-id", r.id);
+
+    var no = document.createElement("div"); no.className = "rec-no"; no.textContent = pad2(idx + 1);
+    var time = document.createElement("div"); time.className = "rec-time"; time.textContent = r.time;
+    var name = document.createElement("div"); name.className = "rec-name"; name.textContent = r.name;
+    var event = document.createElement("div"); event.className = "rec-event"; event.textContent = r.event;
+    var status = document.createElement("div"); status.className = "rec-status";
+    status.innerHTML = icons.ok + "<span>" + (r.spoken ? "已播报" : "已登记") + "</span>";
+
+    var actions = document.createElement("div"); actions.className = "rec-actions";
+    var replayBtn = document.createElement("button");
+    replayBtn.className = "icon-btn replay"; replayBtn.title = "重新播报";
+    replayBtn.innerHTML = icons.replay;
+    replayBtn.addEventListener("click", function(){ replayRecord(r.id); });
+    var delBtn = document.createElement("button");
+    delBtn.className = "icon-btn del"; delBtn.title = "删除该条";
+    delBtn.innerHTML = icons.del;
+    delBtn.addEventListener("click", function(){ deleteRecord(r.id); });
+    actions.appendChild(replayBtn);
+    actions.appendChild(delBtn);
+
+    row.appendChild(no); row.appendChild(time); row.appendChild(name);
+    row.appendChild(event); row.appendChild(status); row.appendChild(actions);
+    recList.appendChild(row);
+  });
+  recList.scrollTop = recList.scrollHeight;
+}
+
+function addRecord(name, event, spoken){
+  var rec = { id: Date.now() + "" + Math.floor(Math.random() * 999), time: nowStr(), name: name, event: event, spoken: spoken, flash: true };
+  state.records.push(rec);
+  persist();
+  renderRecords();
+}
+
+function deleteRecord(id){
+  state.records = state.records.filter(function(r){ return r.id !== id; });
+  persist();
+  renderRecords();
+  showToast("已删除该条记录");
+}
+
+function replayRecord(id){
+  var r = null;
+  state.records.forEach(function(item){ if (item.id === id) r = item; });
+  if (!r) return;
+  renderStage(r.name, r.event, "speaking");
+  speak(r.name, r.event, function(ok){
+    renderStage(r.name, r.event, ok ? "done" : "muted");
+    r.spoken = ok ? true : r.spoken;
+    persist();
+    renderRecords();
+  });
+}
+
+/* ===================== 检录主流程 ===================== */
+function doAnnounce(){
+  var name = nameInput.value.trim();
+  var event = eventInput.value.trim();
+  if (!name){ showToast("请先输入运动员姓名", true); nameInput.focus(); return; }
+  if (!event){ showToast("请先输入参赛项目", true); eventInput.focus(); return; }
+
+  renderStage(name, event, "speaking");
+  speak(name, event, function(ok){
+    renderStage(name, event, ok ? "done" : "muted");
+    addRecord(name, event, ok ? true : false);
+  });
+  // 记录中 spoken 以播报结果为准；先清空输入便于连录
+  nameInput.value = ""; eventInput.value = "";
+  nameCount.textContent = "0/20";
+  nameInput.focus();
+}
+
+announceBtn.addEventListener("click", doAnnounce);
+nameInput.addEventListener("keydown", function(e){ if (e.key === "Enter"){ e.preventDefault(); doAnnounce(); } });
+eventInput.addEventListener("keydown", function(e){ if (e.key === "Enter"){ e.preventDefault(); doAnnounce(); } });
+
+/* ===================== 清空记录 ===================== */
+clearBtn.addEventListener("click", function(){
+  if (!state.records.length){ showToast("当前没有记录可清空"); return; }
+  if (window.confirm("确定清空全部 " + state.records.length + " 条检录记录吗？此操作不可恢复。")){
+    state.records = [];
+    persist();
+    renderRecords();
+    renderStage(null, null, "idle");
+    showToast("已清空全部记录");
+  }
+});
+
+/* ===================== 欢迎页进入 ===================== */
+$("welcomeBtn").addEventListener("click", function(){
+  var w = $("welcome");
+  w.classList.add("hide");
+  setTimeout(function(){ if (w.parentNode) w.parentNode.removeChild(w); }, 500);
+});
+
+/* ===================== 初始化 ===================== */
+renderRecords();
+renderStage(null, null, "idle");
+if (!("speechSynthesis" in window)) showToast("当前浏览器不支持语音播报，仅可使用文字显示", true);
+
+})();
+</script>
+</body>
+</html>
